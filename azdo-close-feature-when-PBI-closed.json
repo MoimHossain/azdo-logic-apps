@@ -1,0 +1,309 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "CheckStatusUpdateRequired": {
+                "actions": {
+                    "Update_a_work_item": {
+                        "inputs": {
+                            "body": {
+                                "dynamicFields": {
+                                    "System.State": "Done"
+                                }
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['visualstudioteamservices']['connectionId']"
+                                }
+                            },
+                            "method": "patch",
+                            "path": "/_apis/wit/workitems/@{encodeURIComponent(body('GetFeature')?['id'])}",
+                            "queries": {
+                                "account": "mohossa",
+                                "project": "Octolamp",
+                                "type": "Product Backlog Item"
+                            }
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "equals": [
+                                "@variables('varClosed')",
+                                "@bool(true)"
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "For_each": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "If"
+            },
+            "For_each": {
+                "actions": {
+                    "Compose": {
+                        "inputs": "@items('For_each')",
+                        "runAfter": {},
+                        "type": "Compose"
+                    },
+                    "Condition": {
+                        "actions": {
+                            "EvaluateTrue": {
+                                "inputs": {
+                                    "name": "varTemp",
+                                    "value": "@and(bool(true), variables('varClosed'))"
+                                },
+                                "runAfter": {},
+                                "type": "SetVariable"
+                            },
+                            "UpdateTotalStateForTrue": {
+                                "inputs": {
+                                    "name": "varClosed",
+                                    "value": "@bool(variables('varTemp'))"
+                                },
+                                "runAfter": {
+                                    "EvaluateTrue": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "SetVariable"
+                            }
+                        },
+                        "else": {
+                            "actions": {
+                                "EvaluateFalse": {
+                                    "inputs": {
+                                        "name": "varTemp",
+                                        "value": "@and(bool(false), variables('varClosed'))"
+                                    },
+                                    "runAfter": {},
+                                    "type": "SetVariable"
+                                },
+                                "UpdateTotalStateForFalse": {
+                                    "inputs": {
+                                        "name": "varClosed",
+                                        "value": "@bool(variables('varTemp'))"
+                                    },
+                                    "runAfter": {
+                                        "EvaluateFalse": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "SetVariable"
+                                }
+                            }
+                        },
+                        "expression": {
+                            "and": [
+                                {
+                                    "equals": [
+                                        "@body('GetPBIState')?['fields']?['System_State']",
+                                        "@string('Done')"
+                                    ]
+                                }
+                            ]
+                        },
+                        "runAfter": {
+                            "GetPBIState": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "If"
+                    },
+                    "GetPBIState": {
+                        "inputs": {
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['visualstudioteamservices']['connectionId']"
+                                }
+                            },
+                            "method": "get",
+                            "path": "/_apis/wit/workitems/@{encodeURIComponent(items('For_Each')?['WorkItemID'])}",
+                            "queries": {
+                                "account": "mohossa",
+                                "project": "Octolamp",
+                                "typeName": "Product Backlog Item"
+                            }
+                        },
+                        "runAfter": {
+                            "Compose": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    }
+                },
+                "foreach": "@body('Select')",
+                "runAfter": {
+                    "Select": [
+                        "Succeeded"
+                    ]
+                },
+                "runtimeConfiguration": {
+                    "concurrency": {
+                        "repetitions": 1
+                    }
+                },
+                "type": "Foreach"
+            },
+            "GetFeature": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['visualstudioteamservices']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/_apis/wit/workitems/@{encodeURIComponent(int(triggerBody()?['Fields']?['System_Parent']))}",
+                    "queries": {
+                        "account": "mohossa",
+                        "project": "Octolamp",
+                        "typeName": "Feature"
+                    }
+                },
+                "runAfter": {
+                    "GetUpdatedItemDetails": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "GetFeatureChildren": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['visualstudioteamservices']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/_apis/wit/workitems/@{encodeURIComponent(body('GetFeature')?['id'])}/children",
+                    "queries": {
+                        "account": "mohossa",
+                        "project": "Octolamp",
+                        "workItemType": "Product Backlog Item"
+                    }
+                },
+                "runAfter": {
+                    "GetFeature": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "GetUpdatedItemDetails": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['visualstudioteamservices']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/_apis/wit/workitems/@{encodeURIComponent(triggerBody()?['id'])}",
+                    "queries": {
+                        "account": "mohossa",
+                        "project": "Octolamp",
+                        "typeName": "Product Backlog Item"
+                    }
+                },
+                "runAfter": {
+                    "Initialize_variable": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "InitVariable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "varClosed",
+                            "type": "boolean",
+                            "value": "@bool(true)"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            },
+            "Initialize_variable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "varTemp",
+                            "type": "boolean",
+                            "value": "@bool(false)"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "InitVariable": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Select": {
+                "inputs": {
+                    "from": "@body('GetFeatureChildren')?['value']",
+                    "select": {
+                        "WorkItemID": "@item()?['System.Id']"
+                    }
+                },
+                "runAfter": {
+                    "GetFeatureChildren": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Select"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "WorkItemUpdateTrigger": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['visualstudioteamservices']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/v2/workitemupdated_trigger/@{encodeURIComponent('Octolamp')}/_apis/wit/wiql",
+                    "queries": {
+                        "account": "mohossa",
+                        "wiql__System_WorkItemType": "Product Backlog Item"
+                    }
+                },
+                "recurrence": {
+                    "frequency": "Minute",
+                    "interval": 1
+                },
+                "splitOn": "@triggerBody()?['value']",
+                "type": "ApiConnection"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "visualstudioteamservices": {
+                    "connectionId": "/subscriptions/<SUBSCRIPTIONID>/resourceGroups/logic-apps-collection/providers/Microsoft.Web/connections/visualstudioteamservices",
+                    "connectionName": "visualstudioteamservices",
+                    "id": "/subscriptions/<SUBSCRIPTIONID>/providers/Microsoft.Web/locations/westeurope/managedApis/visualstudioteamservices"
+                }
+            }
+        }
+    }
+}
