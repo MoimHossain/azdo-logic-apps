@@ -2,6 +2,49 @@
     "definition": {
         "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
         "actions": {
+            "CheckInProgressSetupRequired": {
+                "actions": {
+                    "Update_a_work_item_2": {
+                        "inputs": {
+                            "body": {
+                                "dynamicFields": {
+                                    "System.State": "@{string('In Progress')}"
+                                }
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['visualstudioteamservices']['connectionId']"
+                                }
+                            },
+                            "method": "patch",
+                            "path": "/_apis/wit/workitems/@{encodeURIComponent(body('GetFeature')?['id'])}",
+                            "queries": {
+                                "account": "mohossa",
+                                "project": "Octolamp",
+                                "type": "Feature"
+                            }
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "equals": [
+                                "@variables('varInProgress')",
+                                "@bool(true)"
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "CheckStatusUpdateRequired": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "If"
+            },
             "CheckStatusUpdateRequired": {
                 "actions": {
                     "Update_a_work_item": {
@@ -52,7 +95,7 @@
                         "runAfter": {},
                         "type": "Compose"
                     },
-                    "Condition": {
+                    "ConditionClosedState": {
                         "actions": {
                             "EvaluateTrue": {
                                 "inputs": {
@@ -111,6 +154,76 @@
                         },
                         "runAfter": {
                             "GetPBIState": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "If"
+                    },
+                    "ConditionInProgressState": {
+                        "actions": {
+                            "EvaluateTrueForInprogress": {
+                                "inputs": {
+                                    "name": "varTemp",
+                                    "value": "@or(bool(true), variables('varInProgress'))"
+                                },
+                                "runAfter": {},
+                                "type": "SetVariable"
+                            },
+                            "UpdateInProgressIndicatorForTrue": {
+                                "inputs": {
+                                    "name": "varInProgress",
+                                    "value": "@bool(variables('varTemp'))"
+                                },
+                                "runAfter": {
+                                    "EvaluateTrueForInprogress": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "SetVariable"
+                            }
+                        },
+                        "else": {
+                            "actions": {
+                                "EvaluateFalseForInProgress": {
+                                    "inputs": {
+                                        "name": "varTemp",
+                                        "value": "@or(bool(false), variables('varInProgress'))"
+                                    },
+                                    "runAfter": {},
+                                    "type": "SetVariable"
+                                },
+                                "UpdateInProgressIndictorForFalse": {
+                                    "inputs": {
+                                        "name": "varInProgress",
+                                        "value": "@bool(variables('varTemp'))"
+                                    },
+                                    "runAfter": {
+                                        "EvaluateFalseForInProgress": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "SetVariable"
+                                }
+                            }
+                        },
+                        "expression": {
+                            "or": [
+                                {
+                                    "equals": [
+                                        "@body('GetPBIState')?['fields']?['System_State']",
+                                        "@string('Committed')"
+                                    ]
+                                },
+                                {
+                                    "equals": [
+                                        "@body('GetPBIState')?['fields']?['System_State']",
+                                        "@string('Approved')"
+                                    ]
+                                }
+                            ]
+                        },
+                        "runAfter": {
+                            "ConditionClosedState": [
                                 "Succeeded"
                             ]
                         },
@@ -228,7 +341,11 @@
                         }
                     ]
                 },
-                "runAfter": {},
+                "runAfter": {
+                    "initVarInProgress": [
+                        "Succeeded"
+                    ]
+                },
                 "type": "InitializeVariable"
             },
             "Initialize_variable": {
@@ -261,6 +378,19 @@
                     ]
                 },
                 "type": "Select"
+            },
+            "initVarInProgress": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "varInProgress",
+                            "type": "boolean",
+                            "value": "@bool(true)"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
             }
         },
         "contentVersion": "1.0.0.0",
@@ -299,9 +429,9 @@
         "$connections": {
             "value": {
                 "visualstudioteamservices": {
-                    "connectionId": "/subscriptions/<SUBSCRIPTIONID>/resourceGroups/logic-apps-collection/providers/Microsoft.Web/connections/visualstudioteamservices",
+                    "connectionId": "/subscriptions/<SUB ID>/resourceGroups/logic-apps-collection/providers/Microsoft.Web/connections/visualstudioteamservices",
                     "connectionName": "visualstudioteamservices",
-                    "id": "/subscriptions/<SUBSCRIPTIONID>/providers/Microsoft.Web/locations/westeurope/managedApis/visualstudioteamservices"
+                    "id": "/subscriptions/<SUB ID>/providers/Microsoft.Web/locations/westeurope/managedApis/visualstudioteamservices"
                 }
             }
         }
