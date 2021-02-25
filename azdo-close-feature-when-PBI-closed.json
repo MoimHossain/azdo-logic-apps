@@ -385,7 +385,7 @@
                         {
                             "name": "varInProgress",
                             "type": "boolean",
-                            "value": "@bool(true)"
+                            "value": "@bool(false)"
                         }
                     ]
                 },
@@ -417,8 +417,8 @@
                     }
                 },
                 "recurrence": {
-                    "frequency": "Minute",
-                    "interval": 1
+                    "frequency": "Second",
+                    "interval": 30
                 },
                 "splitOn": "@triggerBody()?['value']",
                 "type": "ApiConnection"
@@ -429,9 +429,9 @@
         "$connections": {
             "value": {
                 "visualstudioteamservices": {
-                    "connectionId": "/subscriptions/<SUB ID>/resourceGroups/logic-apps-collection/providers/Microsoft.Web/connections/visualstudioteamservices",
+                    "connectionId": "/subscriptions/<Subscription ID>/resourceGroups/logic-apps-collection/providers/Microsoft.Web/connections/visualstudioteamservices",
                     "connectionName": "visualstudioteamservices",
-                    "id": "/subscriptions/<SUB ID>/providers/Microsoft.Web/locations/westeurope/managedApis/visualstudioteamservices"
+                    "id": "/subscriptions/<Subscription ID>/providers/Microsoft.Web/locations/westeurope/managedApis/visualstudioteamservices"
                 }
             }
         }
