@@ -1,0 +1,227 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "AddAffectedUser": {
+                "inputs": {
+                    "name": "varDreadScore",
+                    "value": "@add(variables('varTemp'), triggerBody()?['fields']?['Custom_intAffectedUser'])"
+                },
+                "runAfter": {
+                    "CaptureTemp4": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "SetVariable"
+            },
+            "AddDamagePotential": {
+                "inputs": {
+                    "name": "varDreadScore",
+                    "value": "@add(variables('varTemp'), triggerBody()?['fields']?['Custom_intDamagePotential'])"
+                },
+                "runAfter": {
+                    "CaptureTemp1": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "SetVariable"
+            },
+            "AddDiscoverability": {
+                "inputs": {
+                    "name": "varDreadScore",
+                    "value": "@add(variables('varTemp'), triggerBody()?['fields']?['Custom_intDiscoverabilityEffort'])"
+                },
+                "runAfter": {
+                    "CaptureTemp5": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "SetVariable"
+            },
+            "AddExploitability": {
+                "inputs": {
+                    "name": "varDreadScore",
+                    "value": "@add(variables('varTemp'), triggerBody()?['fields']?['Custom_intExploitability'])"
+                },
+                "runAfter": {
+                    "CaptureTemp3": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "SetVariable"
+            },
+            "AddReproducibility": {
+                "inputs": {
+                    "name": "varDreadScore",
+                    "value": "@add(variables('varTemp'), triggerBody()?['fields']?['Custom_intReproducibility'])"
+                },
+                "runAfter": {
+                    "CaptureTemp2": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "SetVariable"
+            },
+            "CaptureTemp1": {
+                "inputs": {
+                    "name": "varTemp",
+                    "value": "@variables('varDreadScore')"
+                },
+                "runAfter": {
+                    "initTempVar": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "SetVariable"
+            },
+            "CaptureTemp2": {
+                "inputs": {
+                    "name": "varTemp",
+                    "value": "@variables('varDreadScore')"
+                },
+                "runAfter": {
+                    "AddDamagePotential": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "SetVariable"
+            },
+            "CaptureTemp3": {
+                "inputs": {
+                    "name": "varTemp",
+                    "value": "@variables('varDreadScore')"
+                },
+                "runAfter": {
+                    "AddReproducibility": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "SetVariable"
+            },
+            "CaptureTemp4": {
+                "inputs": {
+                    "name": "varTemp",
+                    "value": "@variables('varDreadScore')"
+                },
+                "runAfter": {
+                    "AddExploitability": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "SetVariable"
+            },
+            "CaptureTemp5": {
+                "inputs": {
+                    "name": "varTemp",
+                    "value": "@variables('varDreadScore')"
+                },
+                "runAfter": {
+                    "AddAffectedUser": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "SetVariable"
+            },
+            "Update_a_work_item": {
+                "inputs": {
+                    "body": {
+                        "dynamicFields": {
+                            "System.Tags": "@{concat(variables('varDreadScore'), string('-DREAD-SCORE'))}",
+                            "Vsts.TagsAction": "Replace"
+                        }
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['visualstudioteamservices']['connectionId']"
+                        }
+                    },
+                    "method": "patch",
+                    "path": "/_apis/wit/workitems/@{encodeURIComponent(triggerBody()?['id'])}",
+                    "queries": {
+                        "account": "mohossa",
+                        "project": "Octolamp",
+                        "type": "Product Backlog Item"
+                    }
+                },
+                "runAfter": {
+                    "AddDiscoverability": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "initTempVar": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "varTemp",
+                            "type": "integer",
+                            "value": 0
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "initVariable": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "initVariable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "varDreadScore",
+                            "type": "integer",
+                            "value": 0
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "WhenPBIChanged": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['visualstudioteamservices']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/v2/workitemupdated_trigger/@{encodeURIComponent('Octolamp')}/_apis/wit/wiql",
+                    "queries": {
+                        "account": "mohossa",
+                        "wiql__System_WorkItemType": "Product Backlog Item"
+                    }
+                },
+                "recurrence": {
+                    "frequency": "Second",
+                    "interval": 30
+                },
+                "splitOn": "@triggerBody()?['value']",
+                "type": "ApiConnection"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "visualstudioteamservices": {
+                    "connectionId": "/subscriptions/<Subscription ID>/resourceGroups/logic-apps-collection/providers/Microsoft.Web/connections/visualstudioteamservices",
+                    "connectionName": "visualstudioteamservices",
+                    "id": "/subscriptions/<Subscription ID>/providers/Microsoft.Web/locations/westeurope/managedApis/visualstudioteamservices"
+                }
+            }
+        }
+    }
+}
