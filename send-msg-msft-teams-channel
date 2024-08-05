@@ -1,0 +1,101 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Condition": {
+                "actions": {
+                    "Post_message_in_a_chat_or_channel": {
+                        "inputs": {
+                            "body": {
+                                "messageBody": "<p>@{triggerBody()['message']}</p>",
+                                "recipient": {
+                                    "channelId": "19:798926526d8e4ef6998308601baf355e@thread.skype",
+                                    "groupId": "a6c8b749-451b-47a9-b06c-1c3ba82392df"
+                                }
+                            },
+                            "host": {
+                                "connection": {
+                                    "referenceName": "teams"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/beta/teams/conversation/message/poster/Flow bot/location/@{encodeURIComponent('Channel')}"
+                        },
+                        "type": "ApiConnection"
+                    }
+                },
+                "else": {
+                    "actions": {}
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "equals": [
+                                "@variables('userID')",
+                                "0d6ca109-66a8-4daa-8f59-53094bfccdbd"
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Set_variable": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "If"
+            },
+            "ConnectionData": {
+                "inputs": {
+                    "headers": {
+                        "Authorization": "@{concat('Bearer ', triggerOutputs()?['headers']['x-msazdo-token'])}",
+                        "Content-Type": "application/json"
+                    },
+                    "method": "GET",
+                    "uri": "https://dev.azure.com/moim/_apis/ConnectionData"
+                },
+                "runAfter": {
+                    "Initialize_variable_UserID": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "Http"
+            },
+            "Initialize_variable_UserID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "userID",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            },
+            "Set_variable": {
+                "inputs": {
+                    "name": "userID",
+                    "value": "@{body('ConnectionData')?['authenticatedUser']['id']}"
+                },
+                "runAfter": {
+                    "ConnectionData": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "SetVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "inputs": {
+                    "method": "POST"
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateless"
+}
